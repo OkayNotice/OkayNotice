@@ -12,7 +12,9 @@ export async function POST(req: Request) {
       target: destinationUrl,
       type: type || "url",
       createdAt: serverTimestamp(),
-      clicks: 0
+      analytics: {
+        totalViews: 0 // Starting the counter at zero
+      }
     });
     
     return NextResponse.json({ 
