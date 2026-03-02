@@ -1,31 +1,24 @@
-"use client";
-import { useEffect, useState } from "react";
 import { db } from "../../../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { BarChart3, Eye, Link as LinkIcon } from "lucide-react";
 
-export default function StatsPage({ params }: { params: Promise<{ slug: string }> }) {
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [slug, setSlug] = useState<string>("");
+// Because there is no "use client" here, this entire file runs SECURELY on Vercel's servers.
+export default async function StatsPage({ params }: { params: Promise<{ slug: string }> }) {
+  const resolvedParams = await params;
+  
+  const docRef = doc(db, "links", resolvedParams.slug);
+  const docSnap = await getDoc(docRef);
 
-  useEffect(() => {
-    params.then((p) => {
-      setSlug(p.slug);
-      const fetchStats = async () => {
-        const docRef = doc(db, "links", p.slug);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setStats(docSnap.data());
-        }
-        setLoading(false);
-      };
-      fetchStats();
-    });
-  }, [params]);
+  if (!docSnap.exists()) {
+    return <div className="p-10 text-center text-red-500 mt-20 font-bold">Link not found!</div>;
+  }
 
-  if (loading) return <div className="p-10 text-center text-gray-500 mt-20">Loading stats...</div>;
-  if (!stats) return <div className="p-10 text-center text-red-500 mt-20">Link not found!</div>;
+  const data = docSnap.data();
+  
+  // THE GATEKEEPER: We only extract the safe numbers. 
+  // The password and target URL are destroyed here on the server and never sent to the browser.
+  const views = data.analytics?.totalViews || 0;
+  const type = data.type || "url";
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-16">
@@ -40,7 +33,7 @@ export default function StatsPage({ params }: { params: Promise<{ slug: string }
             <Eye className="w-5 h-5" /> Total Views
           </div>
           <div className="text-5xl font-black text-gray-900">
-            {stats.analytics?.totalViews || 0}
+            {views}
           </div>
         </div>
 
@@ -49,7 +42,7 @@ export default function StatsPage({ params }: { params: Promise<{ slug: string }
             <LinkIcon className="w-5 h-5" /> Type
           </div>
           <div className="text-2xl font-bold text-gray-900 capitalize">
-            {stats.type} Link
+            {type} Link
           </div>
         </div>
       </div>
