@@ -15,36 +15,27 @@ export async function GET(
     const docRef = doc(db, "links", slug);
     const docSnap = await getDoc(docRef);
 
-    // If the link doesn't exist, send them back home
     if (!docSnap.exists()) {
       return NextResponse.redirect(new URL("/", req.url));
     }
 
     const data = docSnap.data();
 
-    // Increment the click counter silently in the background
-    updateDoc(docRef, { clicks: increment(1) }).catch(console.error);
+    // The Magic: Increment totalViews by 1 in the background
+    updateDoc(docRef, { "analytics.totalViews": increment(1) }).catch(console.error);
 
-    // ==========================================
-    // MAGIC: Handle Secure Cloudflare R2 Files
-    // ==========================================
+    // Handle Secure Cloudflare R2 Files
     if (data.target && data.target.startsWith("r2://")) {
       const fileKey = data.target.replace("r2://", "");
-      
       const command = new GetObjectCommand({
         Bucket: process.env.R2_BUCKET_NAME,
         Key: fileKey,
       });
-
-      // Generate a temporary download link that expires in 15 minutes (900 seconds)
       const signedUrl = await getSignedUrl(r2Client, command, { expiresIn: 900 });
-      
       return NextResponse.redirect(signedUrl);
     }
 
-    // ==========================================
-    // STANDARD: Handle Normal URLs
-    // ==========================================
+    // Handle Standard URLs
     return NextResponse.redirect(data.target);
     
   } catch (error) {
