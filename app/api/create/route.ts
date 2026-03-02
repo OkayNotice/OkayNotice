@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { nanoid } from "nanoid";
-// Note: You will need to set up Firebase/Firestore next for this to save
-// For now, this logic generates the short ID (slug)
+import { db } from "@/lib/firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 export async function POST(req: Request) {
   try {
@@ -10,7 +10,13 @@ export async function POST(req: Request) {
     // 1. Generate a random 7-character slug
     const slug = nanoid(7);
 
-    // 2. Logic to save to Firestore will go here next
+    // 2. Save to Firestore using the slug as the Document ID
+    await setDoc(doc(db, "links", slug), {
+      target: destinationUrl,
+      type: type || "url",
+      createdAt: serverTimestamp(),
+      clicks: 0
+    });
     
     return NextResponse.json({ 
       success: true, 
@@ -18,6 +24,7 @@ export async function POST(req: Request) {
       slug: slug 
     });
   } catch (error) {
+    console.error("Firebase Error:", error);
     return NextResponse.json({ error: "Failed to create link" }, { status: 500 });
   }
 }
