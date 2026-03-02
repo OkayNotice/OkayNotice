@@ -1,11 +1,12 @@
 "use client";
 import { useState } from "react";
-import { ArrowRight, LinkIcon, FileText, UploadCloud } from "lucide-react";
+import { ArrowRight, LinkIcon, FileText, UploadCloud, Lock } from "lucide-react";
 
 export default function Home() {
   const [mode, setMode] = useState<"url" | "file">("url");
   const [url, setUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [password, setPassword] = useState(""); // The password state is right here
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -18,7 +19,7 @@ export default function Home() {
         if (!url) return;
         const res = await fetch("/api/create", {
           method: "POST",
-          body: JSON.stringify({ destinationUrl: url, type: "url" }),
+          body: JSON.stringify({ destinationUrl: url, type: "url", password }), // Sending password to API
         });
         const data = await res.json();
         if (data.success) setResult(data.shortLink);
@@ -28,7 +29,7 @@ export default function Home() {
       else if (mode === "file") {
         if (!file) return;
         
-        // 1. Get the upload ticket from our API
+        // 1. Get the upload ticket
         const passRes = await fetch("/api/upload", {
           method: "POST",
           body: JSON.stringify({
@@ -45,7 +46,7 @@ export default function Home() {
           return;
         }
 
-        // 2. Upload directly to Cloudflare R2
+        // 2. Upload to Cloudflare R2
         const uploadRes = await fetch(passData.signedUrl, {
           method: "PUT",
           body: file,
@@ -54,13 +55,13 @@ export default function Home() {
 
         if (!uploadRes.ok) throw new Error("Cloudflare rejected the upload.");
 
-        // 3. Save the file record in Firestore
-        // We use a special "r2://" tag so our redirect engine knows it's a secure file
+        // 3. Save to Firestore (with password)
         const createRes = await fetch("/api/create", {
           method: "POST",
           body: JSON.stringify({ 
             destinationUrl: `r2://${passData.fileKey}`, 
-            type: "file" 
+            type: "file",
+            password // Sending password to API
           }),
         });
         
@@ -130,11 +131,25 @@ export default function Home() {
         <button 
           onClick={handleCreate}
           disabled={loading || (mode === "url" ? !url : !file)}
-          className="flex items-center justify-center px-6 py-3 rounded-xl text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-70"
+          className="flex items-center justify-center px-6 py-3 rounded-xl text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-70 font-medium"
         >
           {loading ? "Processing..." : mode === "url" ? "Shorten" : "Upload"}
           {!loading && <ArrowRight className="ml-2 h-5 w-5" />}
         </button>
+      </div>
+
+      {/* Password Field */}
+      <div className="max-w-2xl mx-auto mt-4 text-left px-2">
+        <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm focus-within:border-blue-500 transition-colors">
+          <Lock className="w-4 h-4 text-gray-400 mr-2" />
+          <input 
+            type="text" 
+            placeholder="Add a password (optional)" 
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="bg-transparent text-sm text-gray-700 outline-none w-48"
+          />
+        </div>
       </div>
 
       {/* The Result Area */}
@@ -147,7 +162,7 @@ export default function Home() {
                 navigator.clipboard.writeText(result);
                 alert("Link Copied!");
               }}
-              className="px-4 py-2 bg-white text-green-700 border border-green-300 rounded-lg hover:bg-green-100 whitespace-nowrap"
+              className="px-4 py-2 bg-white text-green-700 border border-green-300 rounded-lg hover:bg-green-100 whitespace-nowrap font-medium"
             >
               Copy Link
             </button>
@@ -165,3 +180,6 @@ export default function Home() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
