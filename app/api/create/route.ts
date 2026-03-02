@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
 import { nanoid } from "nanoid";
-import { db } from "@/lib/firebase";
+import { db } from "../../../lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 export async function POST(req: Request) {
   try {
     const { destinationUrl, type } = await req.json();
-
-    // 1. Generate a random 7-character slug
     const slug = nanoid(7);
 
-    // 2. Save to Firestore using the slug as the Document ID
     await setDoc(doc(db, "links", slug), {
       target: destinationUrl,
       type: type || "url",
