@@ -21,10 +21,18 @@ export async function GET(
 
     const data = docSnap.data();
 
-    // The Magic: Increment totalViews by 1 in the background
+    // Increment views
     updateDoc(docRef, { "analytics.totalViews": increment(1) }).catch(console.error);
 
-    // Handle Secure Cloudflare R2 Files
+    // ==========================================
+    // NEW: Intercept Password Protected Links
+    // ==========================================
+    if (data.password) {
+      // Send them to the locked screen instead of the file
+      return NextResponse.redirect(new URL(`/locked/${slug}`, req.url));
+    }
+
+    // Handle Secure Cloudflare R2 Files (No Password)
     if (data.target && data.target.startsWith("r2://")) {
       const fileKey = data.target.replace("r2://", "");
       const command = new GetObjectCommand({
@@ -35,7 +43,7 @@ export async function GET(
       return NextResponse.redirect(signedUrl);
     }
 
-    // Handle Standard URLs
+    // Handle Standard URLs (No Password)
     return NextResponse.redirect(data.target);
     
   } catch (error) {
