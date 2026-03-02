@@ -1,12 +1,13 @@
 "use client";
 import { useState } from "react";
-import { ArrowRight, LinkIcon, FileText, UploadCloud, Lock } from "lucide-react";
+import { ArrowRight, LinkIcon, FileText, UploadCloud, Lock, Clock } from "lucide-react";
 
 export default function Home() {
   const [mode, setMode] = useState<"url" | "file">("url");
   const [url, setUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [password, setPassword] = useState(""); // The password state is right here
+  const [password, setPassword] = useState("");
+  const [expiresIn, setExpiresIn] = useState("0");
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -19,7 +20,12 @@ export default function Home() {
         if (!url) return;
         const res = await fetch("/api/create", {
           method: "POST",
-          body: JSON.stringify({ destinationUrl: url, type: "url", password }), // Sending password to API
+          body: JSON.stringify({ 
+            destinationUrl: url, 
+            type: "url", 
+            password, 
+            expiresInDays: Number(expiresIn) 
+          }),
         });
         const data = await res.json();
         if (data.success) setResult(data.shortLink);
@@ -55,13 +61,14 @@ export default function Home() {
 
         if (!uploadRes.ok) throw new Error("Cloudflare rejected the upload.");
 
-        // 3. Save to Firestore (with password)
+        // 3. Save to Firestore
         const createRes = await fetch("/api/create", {
           method: "POST",
           body: JSON.stringify({ 
             destinationUrl: `r2://${passData.fileKey}`, 
             type: "file",
-            password // Sending password to API
+            password,
+            expiresInDays: Number(expiresIn)
           }),
         });
         
@@ -138,17 +145,33 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Password Field */}
-      <div className="max-w-2xl mx-auto mt-4 text-left px-2">
-        <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm focus-within:border-blue-500 transition-colors">
+      {/* Optional Settings (Password & Expiration) */}
+      <div className="max-w-2xl mx-auto mt-4 text-left px-2 flex flex-col sm:flex-row gap-3">
+        {/* Password Input */}
+        <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm focus-within:border-blue-500 transition-colors flex-grow">
           <Lock className="w-4 h-4 text-gray-400 mr-2" />
           <input 
             type="text" 
             placeholder="Add a password (optional)" 
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="bg-transparent text-sm text-gray-700 outline-none w-48"
+            className="bg-transparent text-sm text-gray-700 outline-none w-full"
           />
+        </div>
+
+        {/* Expiration Dropdown */}
+        <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm focus-within:border-blue-500 transition-colors">
+          <Clock className="w-4 h-4 text-gray-400 mr-2" />
+          <select 
+            value={expiresIn}
+            onChange={(e) => setExpiresIn(e.target.value)}
+            className="bg-transparent text-sm text-gray-700 outline-none cursor-pointer"
+          >
+            <option value="0">Never Expire</option>
+            <option value="1">Expire in 24 Hours</option>
+            <option value="3">Expire in 3 Days</option>
+            <option value="7">Expire in 7 Days</option>
+          </select>
         </div>
       </div>
 
