@@ -139,19 +139,29 @@ export default function Home() {
 
       {/* The Result Area */}
       {result && (
-        <div className="mt-6 max-w-2xl mx-auto p-4 bg-green-50 border border-green-200 rounded-xl flex justify-between items-center gap-4">
-          <span className="text-green-800 font-medium truncate">{result}</span>
-          <button 
-            onClick={() => {
-              navigator.clipboard.writeText(result);
-              alert("Copied!");
-            }}
-            className="px-4 py-2 bg-white text-green-700 border border-green-300 rounded-lg hover:bg-green-100 whitespace-nowrap"
-          >
-            Copy
-          </button>
+        <div className="mt-8 max-w-2xl mx-auto flex flex-col gap-3 text-left transition-all">
+          <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex justify-between items-center gap-4">
+            <span className="text-green-800 font-medium truncate">{result}</span>
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(result);
+                alert("Link Copied!");
+              }}
+              className="px-4 py-2 bg-white text-green-700 border border-green-300 rounded-lg hover:bg-green-100 whitespace-nowrap"
+            >
+              Copy Link
+            </button>
+          </div>
+          
+          <div className="p-4 bg-white border border-gray-200 rounded-xl flex justify-between items-center shadow-sm">
+            <span className="text-gray-600 text-sm">Track your views instantly:</span>
+            <a 
+              href={`/stats/${result.split('/').pop()}`} 
+              target="_blank"
+              className="text-sm font-semibold text-blue-600 hover:text-blue-800 underline"
+            >
+              View Analytics →
+            </a>
+          </div>
         </div>
       )}
-    </div>
-  );
-}
