@@ -13,7 +13,7 @@
     "@aws-sdk/s3-request-presigner": "^3.750.0",
     "lucide-react": "^0.475.0",
     "nanoid": "^5.1.0",
-    "next": "15.1.7",
+    "next": "15.1.9",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "firebase": "^11.3.1",
